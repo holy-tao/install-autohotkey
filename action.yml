@@ -1,0 +1,26 @@
+name: 'Install AutoHotkey v2'
+description: 'Downloads and installs AutoHotkey and adds it to PATH'
+author: 'Tao Beloney'
+
+inputs:
+  version:
+    description: 'Version of AutoHotkey to install (e.g. 2.0.19 or "latest")'
+    required: false
+    default: 'latest'
+  destination:
+    description: 'Directory to install AutoHotkey into (defaults to current working directory)'
+    required: false
+    default: ''
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run installer
+      shell: pwsh
+      run: |
+        $scriptPath = Join-Path ${{ github.action_path }} 'scripts/install-autohotkey.ps1'
+        & $scriptPath -Version '${{ inputs.version }}'
+
+branding:
+  icon: 'terminal'
+  color: 'green'
