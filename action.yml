@@ -19,7 +19,7 @@ runs:
       shell: pwsh
       run: |
         $scriptPath = Join-Path ${{ github.action_path }} 'scripts/install-autohotkey.ps1'
-        & $scriptPath -Version '${{ inputs.version }}'
+        & $scriptPath -Version '${{ inputs.version }}' -Destination '${{ inputs.destination }}'
 
 branding:
   icon: 'terminal'
