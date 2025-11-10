@@ -7,13 +7,13 @@ By default, the action installs the latest non-alpha release of AutoHotkey into 
 
 The resulting directory structure looks like this. If you need the full path to e.g. `AutoHotkey64.exe`, it is located at `$destination/autohotkey/AutoHotkey64.exe`:
 ```plaintext
-📂 <Destination>/
-└── 📂 autohotkey/
-    ├── 📂 UX (contains default AHK scripts)/
-    │   ├── 📂 inc/
+<Destination>/
+└── autohotkey/
+    ├── UX (contains default AHK scripts)/
+    │   ├── inc/
     │   │   ├── bounce-v1.ahk
     │   │   └── <...>
-    │   ├── 📂 Templates/
+    │   ├── Templates/
     │   │   └── Minimal for v2.ahk
     │   ├── install-ahk2exe.ahk
     │   ├── install-version.ahk
@@ -57,3 +57,10 @@ Alpha versions (e.g. v2.1 versions) are not supported. Alpha release tags only i
 |------|------|------------|
 | version | String | The version of AutoHotkey to install, or `latest` to install the latest version according to GitHub Releases. The version can be specified with or without a leading "v" - `v2.0.19` and `2.0.19` behave identically. The version selected must be available from the AutoHotkey [GitHub releases page](https://github.com/AutoHotkey/AutoHotkey/releases), _not_ the tags page.
 | destination | String | The directory in which to create the `autohotkey` directory where AutoHotkey will be installed. By default, this is the current working directory. If this directory does not exist, it will be created.
+
+## Outputs
+| Name | Type | Description|
+|------|------|------------|
+| version | String | The version of AutoHotkey that was actually installed. If the version input was not `latest`, this is identical to that value, but never includes a leading "v".
+| ahk32 | String | The full path to the installed AutoHotkey32.exe executable
+| ahk64 | String | The full path to the installed AutoHotkey64.exe executable
