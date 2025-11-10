@@ -46,7 +46,7 @@ Specify the output directory with the `destination` parameter:
 - uses: holy-tao/install-autohotkey@v1
   with:
     version: '2.0.19'
-    destination: '${{ runner.temp }}\ahk'
+    destination: '${{ runner.temp }}'
 ```
 
 ### Alpha Versions
