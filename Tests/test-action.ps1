@@ -16,15 +16,20 @@ $scriptPath = Join-Path $repoRoot 'scripts/install-autohotkey.ps1'
 $tempRoot = Join-Path $repoRoot "ahk-test-$([guid]::NewGuid().ToString())"
 New-Item -ItemType Directory -Path $tempRoot | Out-Null
 
-# Mock GITHUB_PATH (so we don’t modify the real PATH)
+# Mock GITHUB_PATH and GITHUB_OUTPUT
 $mockGithubPath = Join-Path $tempRoot 'github_path.txt'
 $env:GITHUB_PATH = $mockGithubPath
+$mockGithubOutput = Join-Path $tempRoot 'github_output.txt'
+$env:GITHUB_OUTPUT = $mockGithubOutput
 
 Write-Host "Running AHK installer test..."
 & $scriptPath -Version $TestVersion -Destination $tempRoot
 
 Write-Host "`n=== MOCK GITHUB_PATH CONTENT ==="
 Get-Content $mockGithubPath | Write-Host
+
+Write-Host "`n=== MOCK GITHUB_OUTPUT CONTENT ==="
+Get-Content $mockGithubOutput | Write-Host
 
 Write-Host "`n=== INSTALLED FILES ==="
 Get-ChildItem -Path "$tempRoot\autohotkey" -Recurse | ForEach-Object {
