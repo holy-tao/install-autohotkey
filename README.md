@@ -3,7 +3,25 @@ GitHub Action to install AutoHotkey from the [GitHub releases page](https://gith
 
 ### Usage
 
-By default, the action installs the latest non-alpha release of AutoHotkey into the current working directory. You can specify the version with the `version` parameter and the output directory with the `destination` parameter.
+By default, the action installs the latest non-alpha release of AutoHotkey into the current working directory. You can specify the version with the `version` parameter and the output directory with the `destination` parameter. Note that the AutoHotkey executables will be installed in a new directory called "autohotkey". 
+
+The resulting directory structure looks like this. If you need the full path to e.g. `AutoHotkey64.exe`, it is located at `$destination/autohotkey/AutoHotkey64.exe`:
+```plaintext
+📂 <Destination>/
+└── 📂 autohotkey/
+    ├── 📂 UX (contains default AHK scripts)/
+    │   ├── 📂 inc/
+    │   │   ├── bounce-v1.ahk
+    │   │   └── <...>
+    │   ├── 📂 Templates/
+    │   │   └── Minimal for v2.ahk
+    │   ├── install-ahk2exe.ahk
+    │   ├── install-version.ahk
+    │   └── <...>
+    ├── AutoHotkey64.exe
+    ├── AutoHotkey32.exe
+    └── <...>
+```
 
 #### Default (Install Latest into the Current Working Directory)
 
