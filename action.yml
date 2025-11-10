@@ -16,6 +16,13 @@ runs:
   using: 'composite'
   steps:
     - name: Run installer
+      outputs:
+        version:
+          description: 'The version of AutoHotkey that was actually installed'
+        ahk32:
+          description: 'The full path to the installed AutoHotkey32.exe executable'
+        ahk64:
+          description: 'The full path to the installed AutoHotkey64.exe executable'
       shell: pwsh
       run: |
         $scriptPath = Join-Path ${{ github.action_path }} 'scripts/install-autohotkey.ps1'
