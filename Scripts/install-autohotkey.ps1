@@ -48,6 +48,11 @@ Invoke-WebRequest -Uri $url -OutFile $zipPath
 Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
 Remove-Item -Path $zipPath -Force
 
+# Export outputs
+Write-Output "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+Write-Output "ahk32=$(Join-Path $extractPath "AutoHotkey32.exe")" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+Write-Output "ahk64=$(Join-Path $extractPath "AutoHotkey64.exe")" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
 # Add to PATH (GitHub-style)
 Write-Output ("$extractPath;" + "$extractPath\Compiler") | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
