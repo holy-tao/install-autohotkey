@@ -11,6 +11,10 @@ inputs:
     description: 'Directory to install AutoHotkey into (defaults to current working directory)'
     required: false
     default: ''
+  compiler:
+    description: 'Version of the compiler to install, if any (e.g. "Ahk2Exe1.1.37.02a0a" or "latest")'
+    required: false
+    default: ''
 
 runs:
   using: 'composite'
@@ -26,7 +30,7 @@ runs:
       shell: pwsh
       run: |
         $scriptPath = Join-Path ${{ github.action_path }} 'scripts/install-autohotkey.ps1'
-        & $scriptPath -Version '${{ inputs.version }}' -Destination '${{ inputs.destination }}'
+        & $scriptPath -Version '${{ inputs.version }}' -Destination '${{ inputs.destination }}' -Compiler '${{ inputs.compiler }}'
 
 branding:
   icon: 'terminal'

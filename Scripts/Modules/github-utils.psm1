@@ -8,7 +8,7 @@ function Get-GitHubRelease() {
     $Version = $Version.TrimStart('v')
 
     if ($Version -eq 'latest') {
-        Write-Host "Fetching latest $FriendlyName v2 release info from GitHub..."
+        Write-Host "Fetching latest $FriendlyName release info from GitHub..."
         $release = Invoke-RestMethod "https://api.github.com/repos/$RepoSlug/releases/latest"
     } else {
         Write-Host "Fetching $FriendlyName v$Version release info from GitHub..."
