@@ -47,7 +47,7 @@ $extractPath = Join-Path $Destination 'autohotkey'
 Install-Item -RepoSlug "AutoHotkey/AutoHotkey" -AssetMatch 'AutoHotkey_.*\.zip$' -Version $Version -Destination $extractPath
 
 # Install compiler if asked
-if (-not [string]::IsNullOrWhiteSpace($Destination)) {
+if (-not [string]::IsNullOrWhiteSpace($Compiler)) {
     $compilerExtractPath = Join-Path $extractPath 'Compiler'
     Install-item -RepoSlug "AutoHotkey/Ahk2Exe" -AssetMatch 'Ahk2Exe.*\.zip$' -Version $Compiler -Destination $compilerExtractPath
 }
