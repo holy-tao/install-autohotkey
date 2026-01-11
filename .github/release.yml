@@ -1,0 +1,16 @@
+changelog:
+  exclude:
+    labels:
+      - chore
+      - ci
+      - ignore-for-release
+  categories:
+    - title: ⛓️‍💥 Breaking Changes
+      labels:
+        - breaking
+    - title: 🚀 Enhancements
+      labels:
+        - enhancement
+    - title: 🛠️ Fixes
+      labels:
+        - "*"
