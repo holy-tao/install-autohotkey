@@ -8,6 +8,19 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Add labels to PRs (used for release note generation)
+  label:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Run Labeler
+        id: label
+        uses: actions/labeler@v6
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
   # Determine if tests should run based on changed files
   changes:
     runs-on: ubuntu-latest
