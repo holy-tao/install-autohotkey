@@ -462,7 +462,7 @@ jobs:
   test-summary:
     runs-on: ubuntu-latest
     needs: [changes, test-versions, test-destination, test-compiler, test-no-compiler, test-default]
-    if: always()
+    if: needs.changes.outputs.should_test == 'true' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Check test results
         run: |
