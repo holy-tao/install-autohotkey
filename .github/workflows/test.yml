@@ -1,0 +1,455 @@
+name: Test
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  # Test version resolution with different input formats
+  test-versions:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: latest
+            version: latest
+            # For 'latest', we just verify it installs successfully
+            verify_exact: false
+          - name: specific-with-v
+            version: v2.0.19
+            expected: "2.0.19"
+            verify_exact: true
+          - name: specific-without-v
+            version: "2.0.19"
+            expected: "2.0.19"
+            verify_exact: true
+          - name: older-version
+            version: "2.0.10"
+            expected: "2.0.10"
+            verify_exact: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install AutoHotkey (${{ matrix.name }})
+        id: install
+        uses: ./
+        with:
+          version: ${{ matrix.version }}
+
+      - name: Verify version output
+        if: matrix.verify_exact
+        shell: pwsh
+        run: |
+          $actual = "${{ steps.install.outputs.version }}"
+          $expected = "${{ matrix.expected }}"
+          if ($actual -ne $expected) {
+            throw "Version mismatch: expected '$expected', got '$actual'"
+          }
+          Write-Host "✅ Version output correct: $actual"
+
+      - name: Test AutoHotkey64
+        shell: pwsh
+        run: |
+          $version = "${{ steps.install.outputs.version }}"
+          $scriptFile = Join-Path $env:RUNNER_TEMP "test64.ahk"
+          $outputFile = Join-Path $env:RUNNER_TEMP "output64.txt"
+          
+          # Write the test script
+          @"
+          #Requires AutoHotkey v2.0
+          FileAppend("Hello from AutoHotkey v" A_AhkVersion "!", "$outputFile")
+          "@ | Set-Content -Path $scriptFile -Encoding UTF8
+          
+          # Show what we're running
+          Write-Host "Script file: $scriptFile"
+          Write-Host "Output file: $outputFile"
+          Write-Host "Script contents:"
+          Get-Content $scriptFile
+          
+          # Run it and capture stderr
+          $pinfo = New-Object System.Diagnostics.ProcessStartInfo
+          $pinfo.FileName = "${{ steps.install.outputs.ahk64 }}"
+          $pinfo.Arguments = "/ErrorStdOut=UTF-8 `"$scriptFile`""
+          $pinfo.RedirectStandardError = $true
+          $pinfo.RedirectStandardOutput = $true
+          $pinfo.UseShellExecute = $false
+          
+          $process = New-Object System.Diagnostics.Process
+          $process.StartInfo = $pinfo
+          $process.Start() | Out-Null
+          $stdout = $process.StandardOutput.ReadToEnd()
+          $stderr = $process.StandardError.ReadToEnd()
+          $process.WaitForExit()
+          
+          Write-Host "Exit code: $($process.ExitCode)"
+          if ($stdout) { Write-Host "Stdout: $stdout" }
+          if ($stderr) { Write-Host "Stderr: $stderr" }
+          
+          if ($process.ExitCode -ne 0) {
+            throw "AutoHotkey64 exited with code $($process.ExitCode)"
+          }
+          
+          # Check if output file exists
+          if (-not (Test-Path $outputFile)) {
+            throw "Output file was not created at $outputFile"
+          }
+          
+          # Verify output
+          $output = Get-Content -Path $outputFile -Raw
+          $expected = "Hello from AutoHotkey v${version}!"
+          if ($output -ne $expected) {
+            throw "64-bit test failed: expected '$expected', got '$output'"
+          }
+          Write-Host "✅ AutoHotkey64 test passed: $output"
+
+      - name: Test AutoHotkey32
+        shell: pwsh
+        run: |
+          $version = "${{ steps.install.outputs.version }}"
+          $scriptFile = Join-Path $env:RUNNER_TEMP "test32.ahk"
+          $outputFile = Join-Path $env:RUNNER_TEMP "output32.txt"
+          
+          # Write the test script
+          @"
+          #Requires AutoHotkey v2.0
+          FileAppend("Hello from AutoHotkey v" A_AhkVersion "!", "$outputFile")
+          "@ | Set-Content -Path $scriptFile -Encoding UTF8
+          
+          # Show what we're running
+          Write-Host "Script file: $scriptFile"
+          Write-Host "Output file: $outputFile"
+          Write-Host "Script contents:"
+          Get-Content $scriptFile
+          
+          # Run it and capture stderr
+          $pinfo = New-Object System.Diagnostics.ProcessStartInfo
+          $pinfo.FileName = "${{ steps.install.outputs.ahk32 }}"
+          $pinfo.Arguments = "/ErrorStdOut=UTF-8 `"$scriptFile`""
+          $pinfo.RedirectStandardError = $true
+          $pinfo.RedirectStandardOutput = $true
+          $pinfo.UseShellExecute = $false
+          
+          $process = New-Object System.Diagnostics.Process
+          $process.StartInfo = $pinfo
+          $process.Start() | Out-Null
+          $stdout = $process.StandardOutput.ReadToEnd()
+          $stderr = $process.StandardError.ReadToEnd()
+          $process.WaitForExit()
+          
+          Write-Host "Exit code: $($process.ExitCode)"
+          if ($stdout) { Write-Host "Stdout: $stdout" }
+          if ($stderr) { Write-Host "Stderr: $stderr" }
+          
+          if ($process.ExitCode -ne 0) {
+            throw "AutoHotkey32 exited with code $($process.ExitCode)"
+          }
+          
+          # Check if output file exists
+          if (-not (Test-Path $outputFile)) {
+            throw "Output file was not created at $outputFile"
+          }
+          
+          # Verify output
+          $output = Get-Content -Path $outputFile -Raw
+          $expected = "Hello from AutoHotkey v${version}!"
+          if ($output -ne $expected) {
+            throw "32-bit test failed: expected '$expected', got '$output'"
+          }
+          Write-Host "✅ AutoHotkey32 test passed: $output"
+
+      - name: Verify PATH contains AutoHotkey
+        shell: pwsh
+        run: |
+          # Verify executables are accessible via PATH (without full path)
+          $ahk64 = Get-Command AutoHotkey64.exe -ErrorAction SilentlyContinue
+          $ahk32 = Get-Command AutoHotkey32.exe -ErrorAction SilentlyContinue
+          
+          if (-not $ahk64) {
+            throw "AutoHotkey64.exe not found in PATH"
+          }
+          if (-not $ahk32) {
+            throw "AutoHotkey32.exe not found in PATH"
+          }
+          
+          Write-Host "✅ AutoHotkey64.exe in PATH: $($ahk64.Source)"
+          Write-Host "✅ AutoHotkey32.exe in PATH: $($ahk32.Source)"
+
+  # Test custom destination parameter
+  test-destination:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: runner-temp
+            destination_suffix: ""
+          - name: nested-path
+            destination_suffix: /custom/nested/dir
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set destination path
+        id: dest
+        shell: pwsh
+        run: |
+          $dest = "${{ runner.temp }}${{ matrix.destination_suffix }}"
+          echo "path=$dest" >> $env:GITHUB_OUTPUT
+
+      - name: Install AutoHotkey to ${{ matrix.name }}
+        id: install
+        uses: ./
+        with:
+          destination: ${{ steps.dest.outputs.path }}
+
+      - name: Verify output paths
+        shell: pwsh
+        run: |
+          $destination = "${{ steps.dest.outputs.path }}"
+          $expectedBase = Join-Path $destination "autohotkey"
+          
+          # Verify ahk64 path is under expected directory
+          $ahk64Path = "${{ steps.install.outputs.ahk64 }}"
+          if (-not $ahk64Path.StartsWith($expectedBase, [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw "ahk64 path '$ahk64Path' doesn't start with expected base '$expectedBase'"
+          }
+          
+          # Verify ahk32 path is under expected directory
+          $ahk32Path = "${{ steps.install.outputs.ahk32 }}"
+          if (-not $ahk32Path.StartsWith($expectedBase, [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw "ahk32 path '$ahk32Path' doesn't start with expected base '$expectedBase'"
+          }
+          
+          Write-Host "✅ Paths are correctly under: $expectedBase"
+
+      - name: Verify files exist
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "${{ steps.install.outputs.ahk64 }}")) {
+            throw "AutoHotkey64.exe not found at ${{ steps.install.outputs.ahk64 }}"
+          }
+          if (-not (Test-Path "${{ steps.install.outputs.ahk32 }}")) {
+            throw "AutoHotkey32.exe not found at ${{ steps.install.outputs.ahk32 }}"
+          }
+          Write-Host "✅ Both executables exist"
+
+      - name: Test execution from custom path
+        shell: pwsh
+        run: |
+          $scriptFile = Join-Path $env:RUNNER_TEMP "test_dest.ahk"
+          $outputFile = Join-Path $env:RUNNER_TEMP "output_dest.txt"
+          
+          @"
+          #Requires AutoHotkey v2.0
+          FileAppend("OK", "$outputFile")
+          "@ | Set-Content -Path $scriptFile -Encoding UTF8
+          
+          $pinfo = New-Object System.Diagnostics.ProcessStartInfo
+          $pinfo.FileName = "${{ steps.install.outputs.ahk64 }}"
+          $pinfo.Arguments = "/ErrorStdOut=UTF-8 `"$scriptFile`""
+          $pinfo.RedirectStandardError = $true
+          $pinfo.RedirectStandardOutput = $true
+          $pinfo.UseShellExecute = $false
+          
+          $process = New-Object System.Diagnostics.Process
+          $process.StartInfo = $pinfo
+          $process.Start() | Out-Null
+          $stderr = $process.StandardError.ReadToEnd()
+          $process.WaitForExit()
+          
+          if ($process.ExitCode -ne 0) {
+            Write-Host "Stderr: $stderr"
+            throw "Execution from custom path failed with exit code $($process.ExitCode)"
+          }
+          
+          $output = Get-Content -Path $outputFile -Raw
+          if ($output -ne "OK") {
+            throw "Execution from custom path failed: expected 'OK', got '$output'"
+          }
+          Write-Host "✅ Execution from custom destination works"
+
+  # Test compiler installation
+  test-compiler:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: compiler-latest
+            compiler: latest
+          - name: compiler-specific
+            compiler: "Ahk2Exe1.1.37.02a0a"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install AutoHotkey with compiler (${{ matrix.name }})
+        id: install
+        uses: ./
+        with:
+          compiler: ${{ matrix.compiler }}
+
+      - name: Verify compiler output is set
+        shell: pwsh
+        run: |
+          $ahk2ExePath = "${{ steps.install.outputs.ahk2Exe }}"
+          if ([string]::IsNullOrWhiteSpace($ahk2ExePath)) {
+            throw "ahk2Exe output is empty or not set"
+          }
+          Write-Host "✅ ahk2Exe output: $ahk2ExePath"
+
+      - name: Verify compiler exists
+        shell: pwsh
+        run: |
+          $path = "${{ steps.install.outputs.ahk2Exe }}"
+          if (-not (Test-Path $path)) {
+            throw "Ahk2Exe.exe not found at $path"
+          }
+          
+          $info = Get-Item $path
+          Write-Host "✅ Compiler exists: $($info.FullName)"
+          Write-Host "  Size: $($info.Length) bytes"
+
+  # Test without compiler (verify ahk2Exe output is empty/not set)
+  test-no-compiler:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install AutoHotkey without compiler
+        id: install
+        uses: ./
+
+      - name: Verify ahk2Exe output is empty
+        shell: pwsh
+        run: |
+          $ahk2ExePath = "${{ steps.install.outputs.ahk2Exe }}"
+          if (-not [string]::IsNullOrWhiteSpace($ahk2ExePath)) {
+            throw "ahk2Exe should be empty when compiler not requested, got: $ahk2ExePath"
+          }
+          Write-Host "✅ ahk2Exe output correctly empty when compiler not installed"
+
+  # Test default configuration (no inputs)
+  test-default:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install AutoHotkey with defaults
+        id: install
+        uses: ./
+
+      - name: Verify all outputs are set
+        shell: pwsh
+        run: |
+          $version = "${{ steps.install.outputs.version }}"
+          $ahk64 = "${{ steps.install.outputs.ahk64 }}"
+          $ahk32 = "${{ steps.install.outputs.ahk32 }}"
+          
+          if ([string]::IsNullOrWhiteSpace($version)) {
+            throw "version output is empty"
+          }
+          if ([string]::IsNullOrWhiteSpace($ahk64)) {
+            throw "ahk64 output is empty"
+          }
+          if ([string]::IsNullOrWhiteSpace($ahk32)) {
+            throw "ahk32 output is empty"
+          }
+          
+          Write-Host "✅ version: $version"
+          Write-Host "✅ ahk64: $ahk64"
+          Write-Host "✅ ahk32: $ahk32"
+
+      - name: Verify installed in current directory
+        shell: pwsh
+        run: |
+          $expectedBase = Join-Path $env:GITHUB_WORKSPACE "autohotkey"
+          $ahk64Path = "${{ steps.install.outputs.ahk64 }}"
+          
+          if (-not $ahk64Path.StartsWith($expectedBase, [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw "Default install should be in workspace, got: $ahk64Path"
+          }
+          Write-Host "✅ Installed in current working directory"
+
+      - name: Test both architectures
+        shell: pwsh
+        run: |
+          $script64 = Join-Path $env:RUNNER_TEMP "arch64.ahk"
+          $script32 = Join-Path $env:RUNNER_TEMP "arch32.ahk"
+          $output64File = Join-Path $env:RUNNER_TEMP "arch64_out.txt"
+          $output32File = Join-Path $env:RUNNER_TEMP "arch32_out.txt"
+          
+          # Test 64-bit
+          @"
+          #Requires AutoHotkey v2.0
+          FileAppend(A_PtrSize = 8 ? "64-bit" : "32-bit", "$output64File")
+          "@ | Set-Content -Path $script64 -Encoding UTF8
+          
+          $pinfo = New-Object System.Diagnostics.ProcessStartInfo
+          $pinfo.FileName = "${{ steps.install.outputs.ahk64 }}"
+          $pinfo.Arguments = "/ErrorStdOut=UTF-8 `"$script64`""
+          $pinfo.RedirectStandardError = $true
+          $pinfo.RedirectStandardOutput = $true
+          $pinfo.UseShellExecute = $false
+          
+          $process = New-Object System.Diagnostics.Process
+          $process.StartInfo = $pinfo
+          $process.Start() | Out-Null
+          $process.WaitForExit()
+          
+          $out64 = Get-Content -Path $output64File -Raw
+          
+          # Test 32-bit
+          @"
+          #Requires AutoHotkey v2.0
+          FileAppend(A_PtrSize = 8 ? "64-bit" : "32-bit", "$output32File")
+          "@ | Set-Content -Path $script32 -Encoding UTF8
+          
+          $pinfo = New-Object System.Diagnostics.ProcessStartInfo
+          $pinfo.FileName = "${{ steps.install.outputs.ahk32 }}"
+          $pinfo.Arguments = "/ErrorStdOut=UTF-8 `"$script32`""
+          $pinfo.RedirectStandardError = $true
+          $pinfo.RedirectStandardOutput = $true
+          $pinfo.UseShellExecute = $false
+          
+          $process = New-Object System.Diagnostics.Process
+          $process.StartInfo = $pinfo
+          $process.Start() | Out-Null
+          $process.WaitForExit()
+          
+          $out32 = Get-Content -Path $output32File -Raw
+          
+          if ($out64 -ne "64-bit") {
+            throw "AutoHotkey64 reported: $out64"
+          }
+          if ($out32 -ne "32-bit") {
+            throw "AutoHotkey32 reported: $out32"
+          }
+          
+          Write-Host "✅ AutoHotkey64 correctly reports 64-bit"
+          Write-Host "✅ AutoHotkey32 correctly reports 32-bit"
+
+  # Summary job that depends on all tests
+  test-summary:
+    runs-on: ubuntu-latest
+    needs: [test-versions, test-destination, test-compiler, test-no-compiler, test-default]
+    if: always()
+    steps:
+      - name: Check test results
+        run: |
+          if [[ "${{ needs.test-versions.result }}" != "success" ]] || \
+             [[ "${{ needs.test-destination.result }}" != "success" ]] || \
+             [[ "${{ needs.test-compiler.result }}" != "success" ]] || \
+             [[ "${{ needs.test-no-compiler.result }}" != "success" ]] || \
+             [[ "${{ needs.test-default.result }}" != "success" ]]; then
+            echo "❌ Some tests failed"
+            echo "  test-versions: ${{ needs.test-versions.result }}"
+            echo "  test-destination: ${{ needs.test-destination.result }}"
+            echo "  test-compiler: ${{ needs.test-compiler.result }}"
+            echo "  test-no-compiler: ${{ needs.test-no-compiler.result }}"
+            echo "  test-default: ${{ needs.test-default.result }}"
+            exit 1
+          fi
+          echo "✅ All tests passed!"
