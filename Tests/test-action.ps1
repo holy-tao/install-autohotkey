@@ -23,7 +23,7 @@ $mockGithubOutput = Join-Path $tempRoot 'github_output.txt'
 $env:GITHUB_OUTPUT = $mockGithubOutput
 
 Write-Host "Running AHK installer test..."
-& $scriptPath -Version $TestVersion -Destination $tempRoot
+& $scriptPath -Version $TestVersion -Destination $tempRoot -Compiler "Ahk2Exe1.1.37.02a0a"
 
 Write-Host "`n=== MOCK GITHUB_PATH CONTENT ==="
 Get-Content $mockGithubPath | Write-Host

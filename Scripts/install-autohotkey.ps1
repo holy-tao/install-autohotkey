@@ -32,7 +32,7 @@ function Install-Item(){
     Expand-Archive -Path $zipPath -DestinationPath $Destination -Force
     Remove-Item -Path $zipPath -Force
 
-    Write-Host "✅ $FriendlyName v$version installed successfully to: $Destination"
+    Write-Host "✅ $FriendlyName $version installed successfully to: $Destination"
 
     # Return the resolved version
     return $version
@@ -46,6 +46,10 @@ if ([string]::IsNullOrWhiteSpace($Destination)) {
     $Destination = (Get-Item .).FullName
 }
 
+# Normalize AHK version to include a leading "v" if it isn't "latest"
+if(-not $Version.Equals("latest") -and -not $Version.StartsWith("v")) {
+    $Version = "v" + $Version
+}
 $extractPath = Join-Path $Destination 'autohotkey'
 $installedVersion = Install-Item -RepoSlug "AutoHotkey/AutoHotkey" -AssetMatch 'AutoHotkey_.*\.zip$' -Version $Version -Destination $extractPath
 
