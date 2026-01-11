@@ -32,7 +32,10 @@ function Install-Item(){
     Expand-Archive -Path $zipPath -DestinationPath $Destination -Force
     Remove-Item -Path $zipPath -Force
 
-    Write-Host "✅ $FriendlyName v$version installed successfully to: $extractPath"
+    Write-Host "✅ $FriendlyName v$version installed successfully to: $Destination"
+
+    # Return the resolved version
+    return $version
 }
 
 $ErrorActionPreference = 'Stop'
@@ -44,7 +47,7 @@ if ([string]::IsNullOrWhiteSpace($Destination)) {
 }
 
 $extractPath = Join-Path $Destination 'autohotkey'
-Install-Item -RepoSlug "AutoHotkey/AutoHotkey" -AssetMatch 'AutoHotkey_.*\.zip$' -Version $Version -Destination $extractPath
+$installedVersion = Install-Item -RepoSlug "AutoHotkey/AutoHotkey" -AssetMatch 'AutoHotkey_.*\.zip$' -Version $Version -Destination $extractPath
 
 # Install compiler if asked
 if (-not [string]::IsNullOrWhiteSpace($Compiler)) {
@@ -53,12 +56,11 @@ if (-not [string]::IsNullOrWhiteSpace($Compiler)) {
 }
 
 # Export outputs
-Write-Output "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+Write-Output "version=$installedVersion" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 Write-Output "ahk32=$(Join-Path $extractPath "AutoHotkey32.exe")" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
 Write-Output "ahk64=$(Join-Path $extractPath "AutoHotkey64.exe")" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-if (-not [string]::IsNullOrWhiteSpace($Destination)){
+if (-not [string]::IsNullOrWhiteSpace($Compiler)){
     Write-Output "ahk2Exe=$(Join-Path $extractPath "Compiler" "Ahk2Exe.exe")" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
-
 }
 
 # Add to PATH (GitHub-style)
