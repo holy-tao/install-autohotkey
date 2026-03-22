@@ -4,26 +4,63 @@ param(
     [string] $Compiler = ""
 )
 
-function Install-Item(){
+function Install-AhkFromDownloadsPage() {
     param(
-        [Parameter(Mandatory = $true)][string] $RepoSlug,
-        [Parameter(Mandatory = $true)][string] $AssetMatch,
         [Parameter(Mandatory = $true)][string] $Version,
         [Parameter(Mandatory = $true)][string] $Destination
     )
 
-    $FriendlyName = $RepoSlug.Split("/") | Select-Object -Last 1
+    Write-Host "Installing AutoHotkey to: $Destination"
+
+    $headers = @{ 'User-Agent' = 'PowerShell/install-autohotkey' }
+
+    $info = Get-AhkDownloadInfo -Version $Version -Headers $headers
+    $resolvedVersion = $info.Version
+    $url = $info.Url
+
+    Write-Host "Resolved AutoHotkey version: $resolvedVersion"
+    Write-Host "Download URL: $url"
+
+    # Connectivity check — helps diagnose auth/TLS issues on runners
+    Write-Host "HEAD check: $url"
+    try {
+        $head = Invoke-WebRequest -Uri $url -Method Head -UseBasicParsing -Headers $headers
+        Write-Host "  Status: $($head.StatusCode) $($head.StatusDescription)"
+    } catch {
+        Write-Warning "  HEAD failed: $($_.Exception.Message)"
+        if ($_.Exception.Response) {
+            Write-Warning "  HTTP status: $([int]$_.Exception.Response.StatusCode)"
+        }
+    }
+
+    $zipPath = Join-Path $PSScriptRoot "AutoHotkey.zip"
+
+    Invoke-WebRequest -Uri $url -OutFile $zipPath -UseBasicParsing -Headers $headers
+    Expand-Archive -Path $zipPath -DestinationPath $Destination -Force
+    Remove-Item -Path $zipPath -Force
+
+    Write-Host "✅ AutoHotkey $resolvedVersion installed successfully to: $Destination"
+
+    return $resolvedVersion
+}
+
+function Install-CompilerFromGitHub() {
+    param(
+        [Parameter(Mandatory = $true)][string] $Version,
+        [Parameter(Mandatory = $true)][string] $Destination
+    )
+
+    $FriendlyName = "Ahk2Exe"
 
     Write-Host "Installing $FriendlyName to: $Destination"
 
-    $release = Get-GitHubRelease -RepoSlug $RepoSlug -Version $Version -FriendlyName $FriendlyName
-    $version = $release.tag_name.TrimStart('v')
-    Write-Host "Resolved $FriendlyName version: $version"
+    $release = Get-GitHubRelease -RepoSlug "AutoHotkey/Ahk2Exe" -Version $Version -FriendlyName $FriendlyName
+    $resolvedVersion = $release.tag_name.TrimStart('v')
+    Write-Host "Resolved $FriendlyName version: $resolvedVersion"
 
-    $asset = Get-ReleaseAsset -Release $release -Match $AssetMatch
+    $asset = Get-ReleaseAsset -Release $release -Match 'Ahk2Exe.*\.zip$'
 
     $url = $asset.browser_download_url
-
     Write-Host "Download URL: $url"
 
     $zipPath = Join-Path $PSScriptRoot "$FriendlyName.zip"
@@ -32,31 +69,32 @@ function Install-Item(){
     Expand-Archive -Path $zipPath -DestinationPath $Destination -Force
     Remove-Item -Path $zipPath -Force
 
-    Write-Host "✅ $FriendlyName $version installed successfully to: $Destination"
-
-    # Return the resolved version
-    return $version
+    Write-Host "✅ $FriendlyName $resolvedVersion installed successfully to: $Destination"
 }
 
 $ErrorActionPreference = 'Stop'
 
 Import-Module -Name "$PSScriptRoot\Modules\github-utils.psm1" -Force
+Import-Module -Name "$PSScriptRoot\Modules\ahk-utils.psm1" -Force
+
+# Diagnostics — helps identify connectivity/TLS issues on GitHub runners
+Write-Host "=== Diagnostics ==="
+Write-Host "PowerShell: $($PSVersionTable.PSVersion)  OS: $($PSVersionTable.OS)"
+[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+Write-Host "TLS forced to: $([Net.ServicePointManager]::SecurityProtocol)"
+Write-Host "==="
 
 if ([string]::IsNullOrWhiteSpace($Destination)) {
     $Destination = (Get-Item .).FullName
 }
 
-# Normalize AHK version to include a leading "v" if it isn't "latest"
-if(-not $Version.Equals("latest") -and -not $Version.StartsWith("v")) {
-    $Version = "v" + $Version
-}
 $extractPath = Join-Path $Destination 'autohotkey'
-$installedVersion = Install-Item -RepoSlug "AutoHotkey/AutoHotkey" -AssetMatch 'AutoHotkey_.*\.zip$' -Version $Version -Destination $extractPath
+$installedVersion = Install-AhkFromDownloadsPage -Version $Version -Destination $extractPath
 
-# Install compiler if asked
+# Install compiler if asked (still sourced from GitHub releases)
 if (-not [string]::IsNullOrWhiteSpace($Compiler)) {
     $compilerExtractPath = Join-Path $extractPath 'Compiler'
-    Install-item -RepoSlug "AutoHotkey/Ahk2Exe" -AssetMatch 'Ahk2Exe.*\.zip$' -Version $Compiler -Destination $compilerExtractPath
+    Install-CompilerFromGitHub -Version $Compiler -Destination $compilerExtractPath
 }
 
 # Export outputs
