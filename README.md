@@ -68,7 +68,7 @@ By default, the compiler is not installed. Note that running `install-ahk2exe` i
 ## Inputs
 | Name | Type | Description|
 |------|------|------------|
-| version | String | The version of AutoHotkey to install, or `latest` to install the latest version according to GitHub Releases. The version can be specified with or without a leading "v" - `v2.0.19` and `2.0.19` behave identically. The version selected must be available from the AutoHotkey [GitHub releases page](https://github.com/AutoHotkey/AutoHotkey/releases), _not_ the tags page.
+| version | String | The version of AutoHotkey to install, or `latest` to install the latest version according to GitHub Releases. The version can be specified with or without a leading "v" - `v2.0.19` and `2.0.19` behave identically. The version selected must be an available AutoHotkey [GitHub release](https://github.com/AutoHotkey/AutoHotkey/releases) or a tag.
 | destination | String | The directory in which to create the `autohotkey` directory where AutoHotkey will be installed. By default, this is the current working directory. If this directory does not exist, it will be created.
 | compiler | String | The version of Ahk2Exe, if any, to install. Omit or leave blank to not install Ahk2Exe (default behavior)
 
