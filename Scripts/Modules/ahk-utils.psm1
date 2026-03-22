@@ -1,7 +1,28 @@
+function Invoke-CurlDownload() {
+    param(
+        [Parameter(Mandatory = $true)][string] $Uri,
+        [string] $OutFile
+    )
+
+    if ($OutFile) {
+        & curl.exe -fsSL -o $OutFile $Uri
+    } else {
+        # Capture stdout (e.g. for version.txt)
+        $output = & curl.exe -fsSL $Uri
+        if ($LASTEXITCODE -ne 0) {
+            throw "curl failed with exit code $LASTEXITCODE fetching: $Uri"
+        }
+        return $output
+    }
+
+    if ($LASTEXITCODE -ne 0) {
+        throw "curl failed with exit code $LASTEXITCODE downloading: $Uri"
+    }
+}
+
 function Get-AhkDownloadInfo() {
     param(
-        [Parameter(Mandatory = $true)][string] $Version,
-        [hashtable] $Headers = @{ 'User-Agent' = 'PowerShell/install-autohotkey' }
+        [Parameter(Mandatory = $true)][string] $Version
     )
 
     $baseUrl = 'https://www.autohotkey.com/download'
@@ -17,7 +38,7 @@ function Get-AhkDownloadInfo() {
         Write-Host "Fetching latest AHK version for branch $branch..."
         $versionUrl = "$baseUrl/$branch/version.txt"
         Write-Host "  version.txt URL: $versionUrl"
-        $Version = (Invoke-WebRequest -Uri $versionUrl -UseBasicParsing -Headers $Headers).Content.Trim()
+        $Version = (Invoke-CurlDownload -Uri $versionUrl).Trim()
         Write-Host "  Resolved to: $Version"
     } else {
         # Strip optional leading 'v'

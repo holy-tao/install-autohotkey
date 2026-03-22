@@ -12,30 +12,32 @@ function Install-AhkFromDownloadsPage() {
 
     Write-Host "Installing AutoHotkey to: $Destination"
 
-    $headers = @{ 'User-Agent' = 'PowerShell/install-autohotkey' }
+    $headers = @{ 'User-Agent' = 'PowerShell/install-autohotkey' }  # used for diagnostic HEAD check only
 
-    $info = Get-AhkDownloadInfo -Version $Version -Headers $headers
+    $info = Get-AhkDownloadInfo -Version $Version
     $resolvedVersion = $info.Version
     $url = $info.Url
 
     Write-Host "Resolved AutoHotkey version: $resolvedVersion"
     Write-Host "Download URL: $url"
 
-    # Connectivity check — helps diagnose auth/TLS issues on runners
-    Write-Host "HEAD check: $url"
+    # Diagnostic: show what .NET/PowerShell gets (likely a Cloudflare challenge page on CI runners)
+    Write-Host "HEAD check via Invoke-WebRequest (diagnostic): $url"
     try {
         $head = Invoke-WebRequest -Uri $url -Method Head -UseBasicParsing -Headers $headers
         Write-Host "  Status: $($head.StatusCode) $($head.StatusDescription)"
     } catch {
         Write-Warning "  HEAD failed: $($_.Exception.Message)"
         if ($_.Exception.Response) {
-            Write-Warning "  HTTP status: $([int]$_.Exception.Response.StatusCode)"
+            Write-Warning "  HTTP status: $([int]$_.Exception.Response.StatusCode) (likely Cloudflare bot challenge)"
         }
     }
 
+    # Use curl.exe for the actual download — its TLS fingerprint bypasses Cloudflare's bot detection
+    Write-Host "Downloading via curl.exe: $url"
     $zipPath = Join-Path $PSScriptRoot "AutoHotkey.zip"
 
-    Invoke-WebRequest -Uri $url -OutFile $zipPath -UseBasicParsing -Headers $headers
+    Invoke-CurlDownload -Uri $url -OutFile $zipPath
     Expand-Archive -Path $zipPath -DestinationPath $Destination -Force
     Remove-Item -Path $zipPath -Force
 
