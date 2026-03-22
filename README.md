@@ -1,5 +1,5 @@
 # install-autohotkey
-GitHub Action to install AutoHotkey from the [AHK Downloads page](https://www.autohotkey.com/download/) and add it to the GitHub runner `PATH` variable.
+GitHub Action to install AutoHotkey and add it to the GitHub runner `PATH` variable.
 
 ## Usage
 
