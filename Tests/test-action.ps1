@@ -3,7 +3,7 @@
 # a super simple test script
 # -----------------------------
 param(
-    [string]$TestVersion = '2.0.19'
+    [string]$TestVersion = '2.1-latest'
 )
 
 # Simulate GitHub Actions environment locally
@@ -16,11 +16,12 @@ $scriptPath = Join-Path $repoRoot 'scripts/install-autohotkey.ps1'
 $tempRoot = Join-Path $repoRoot "ahk-test-$([guid]::NewGuid().ToString())"
 New-Item -ItemType Directory -Path $tempRoot | Out-Null
 
-# Mock GITHUB_PATH and GITHUB_OUTPUT
+# Mock GitHub Actions environment variables
 $mockGithubPath = Join-Path $tempRoot 'github_path.txt'
 $env:GITHUB_PATH = $mockGithubPath
 $mockGithubOutput = Join-Path $tempRoot 'github_output.txt'
 $env:GITHUB_OUTPUT = $mockGithubOutput
+$env:RUNNER_TEMP = $tempRoot
 
 Write-Host "Running AHK installer test..."
 & $scriptPath -Version $TestVersion -Destination $tempRoot -Compiler "Ahk2Exe1.1.37.02a0a"

@@ -41,17 +41,24 @@ function Install-Item(){
 $ErrorActionPreference = 'Stop'
 
 Import-Module -Name "$PSScriptRoot\Modules\github-utils.psm1" -Force
+Import-Module -Name "$PSScriptRoot\Modules\ahk-utils.psm1" -Force
 
 if ([string]::IsNullOrWhiteSpace($Destination)) {
     $Destination = (Get-Item .).FullName
 }
 
-# Normalize AHK version to include a leading "v" if it isn't "latest"
-if(-not $Version.Equals("latest") -and -not $Version.StartsWith("v")) {
-    $Version = "v" + $Version
-}
+$headers = Get-GitHubApiRequestHeaders
+$resolved = Resolve-AhkVersion -Version $Version -Headers $headers
 $extractPath = Join-Path $Destination 'autohotkey'
-$installedVersion = Install-Item -RepoSlug "AutoHotkey/AutoHotkey" -AssetMatch 'AutoHotkey_.*\.zip$' -Version $Version -Destination $extractPath
+
+if ($resolved.Major -eq 2 -and $resolved.Minor -ge 1) {
+    # 2.1+ is not published to GitHub releases — build from source
+    $installedVersion = Build-AhkFromSource -Version $resolved.Version -Destination $extractPath
+} else {
+    # 2.0 and earlier — download from GitHub releases
+    $ghVersion = if ($resolved.Version -eq '') { 'latest' } else { "v$($resolved.Version)" }
+    $installedVersion = Install-Item -RepoSlug "AutoHotkey/AutoHotkey" -AssetMatch 'AutoHotkey_.*\.zip$' -Version $ghVersion -Destination $extractPath
+}
 
 # Install compiler if asked
 if (-not [string]::IsNullOrWhiteSpace($Compiler)) {
