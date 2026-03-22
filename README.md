@@ -1,5 +1,5 @@
 # install-autohotkey
-GitHub Action to install AutoHotkey from the [GitHub releases page](https://github.com/AutoHotkey/AutoHotkey/releases) and add it to the GitHub runner `PATH` variable.
+GitHub Action to install AutoHotkey from the [AHK Downloads page](https://www.autohotkey.com/download/) and add it to the GitHub runner `PATH` variable.
 
 ## Usage
 
@@ -17,44 +17,51 @@ The resulting directory structure looks like this. If you need the full path to 
     └── <...>
 ```
 
-#### Default (Install Latest into the Current Working Directory)
+#### Default (Install Latest AHK v2.0 into the Current Working Directory)
 
-Install the latest AutoHotkey release into the current working directory:
+Install the latest stable AutoHotkey v2.0 release into the current working directory:
 ```yml
-- uses: holy-tao/install-autohotkey@v1
+- uses: holy-tao/install-autohotkey@v2
 ```
 
 #### Install a Specific Version
 Specify a version with the `version` parameter. This can be a version string like `v2.0.0`, with or without the leading `v` (thus, `v2.0.0` and `2.0.0` are identical), or the literal string `latest` to install the latest version (this is the default).
 
 ```yml
-- uses: holy-tao/install-autohotkey@v1
+- uses: holy-tao/install-autohotkey@v2
   with:
     version: '2.0.19'
+```
+
+#### Install the Latest Version of a Specific Branch
+Specify `{major}.{minor}-latest` to specifically install the latest version of a minor-version branch. For example, to install the latest v2.1 build:
+
+```yml
+- uses: holy-tao/install-autohotkey@v2
+  with:
+    version: '2.1-latest'
 ```
 
 #### Install into a Specific Directory
 Specify the output directory with the `destination` parameter:
 
 ```yml
-- uses: holy-tao/install-autohotkey@v1
+- uses: holy-tao/install-autohotkey@v2
   with:
-    version: '2.0.19'
+    version: '2.1-alpha.20'
     destination: '${{ runner.temp }}'
 ```
 
 #### Install with the [Compiler](https://github.com/AutoHotkey/Ahk2Exe)
 Specify a version of Ahk2Exe to install, or the literal string `latest` to get the latest version, in the `compiler` parameter:
 ```yml
-- uses: holy-tao/install-autohotkey@v1
+- uses: holy-tao/install-autohotkey@v2
   with:
     version: 'latest'
     compiler: 'latest'
 ```
 By default, the compiler is not installed. Note that running `install-ahk2exe` is not recommended, as it will launch the compiler Gui, which you cannot access in the headless GitHub Action runners.
 
-### Alpha Versions
-Alpha versions (e.g. v2.1 versions) are not supported. Alpha release tags only include source code ([example](https://github.com/AutoHotkey/AutoHotkey/releases/tag/v2.1-alpha.18)), so installing one would require building from source. While possible, this is a much more significant effort than installing from a .zip file.
 
 ## Inputs
 | Name | Type | Description|
@@ -66,7 +73,7 @@ Alpha versions (e.g. v2.1 versions) are not supported. Alpha release tags only i
 ## Outputs
 | Name | Type | Description|
 |------|------|------------|
-| version | String | The version of AutoHotkey that was actually installed. If the version input was not `latest`, this is identical to that value, but never includes a leading "v".
+| version | String | The version of AutoHotkey that was actually installed. If the version input was not `latest` or a version-specific `latest` string, this is identical to that value, but never includes a leading "v".
 | ahk32 | String | The full path to the installed AutoHotkey32.exe executable
 | ahk64 | String | The full path to the installed AutoHotkey64.exe executable
 | ahk2Exe | String | The full path to the installed Ahk2Exe.exe executable, only present if a compiler version was specified
