@@ -63,6 +63,13 @@ jobs:
             version: "2.0.10"
             expected: "2.0.10"
             verify_exact: true
+          - name: latest-21
+            version: "2.1-latest"
+            verify_exact: false
+          - name: specific-21
+            version: "2.1-alpha.20"
+            expected: "2.1-alpha.20"
+            verify_exact: true
     steps:
       - uses: actions/checkout@v6
 
@@ -92,8 +99,8 @@ jobs:
           
           # Write the test script
           @"
-          #Requires AutoHotkey v2.0
-          FileAppend("Hello from AutoHotkey v" A_AhkVersion "!", "$outputFile")
+          #Requires AutoHotkey v2
+          FileAppend(Format("Hello from AutoHotkey v{1} {2}-bit!", A_AhkVersion, A_PtrSize * 8), "$outputFile")
           "@ | Set-Content -Path $scriptFile -Encoding UTF8
           
           # Show what we're running
@@ -132,7 +139,7 @@ jobs:
           
           # Verify output
           $output = Get-Content -Path $outputFile -Raw
-          $expected = "Hello from AutoHotkey v${version}!"
+          $expected = "Hello from AutoHotkey v${version} 64-bit!"
           if ($output -ne $expected) {
             throw "64-bit test failed: expected '$expected', got '$output'"
           }
@@ -147,8 +154,8 @@ jobs:
           
           # Write the test script
           @"
-          #Requires AutoHotkey v2.0
-          FileAppend("Hello from AutoHotkey v" A_AhkVersion "!", "$outputFile")
+          #Requires AutoHotkey v2
+          FileAppend(Format("Hello from AutoHotkey v{1} {2}-bit!", A_AhkVersion, A_PtrSize * 8), "$outputFile")
           "@ | Set-Content -Path $scriptFile -Encoding UTF8
           
           # Show what we're running
@@ -187,7 +194,7 @@ jobs:
           
           # Verify output
           $output = Get-Content -Path $outputFile -Raw
-          $expected = "Hello from AutoHotkey v${version}!"
+          $expected = "Hello from AutoHotkey v${version} 32-bit!"
           if ($output -ne $expected) {
             throw "32-bit test failed: expected '$expected', got '$output'"
           }
@@ -277,7 +284,7 @@ jobs:
           $outputFile = Join-Path $env:RUNNER_TEMP "output_dest.txt"
           
           @"
-          #Requires AutoHotkey v2.0
+          #Requires AutoHotkey v2
           FileAppend("OK", "$outputFile")
           "@ | Set-Content -Path $scriptFile -Encoding UTF8
           
@@ -423,7 +430,7 @@ jobs:
           
           # Test 64-bit
           @"
-          #Requires AutoHotkey v2.0
+          #Requires AutoHotkey v2
           FileAppend(A_PtrSize = 8 ? "64-bit" : "32-bit", "$output64File")
           "@ | Set-Content -Path $script64 -Encoding UTF8
           
@@ -443,7 +450,7 @@ jobs:
           
           # Test 32-bit
           @"
-          #Requires AutoHotkey v2.0
+          #Requires AutoHotkey v2
           FileAppend(A_PtrSize = 8 ? "64-bit" : "32-bit", "$output32File")
           "@ | Set-Content -Path $script32 -Encoding UTF8
           
