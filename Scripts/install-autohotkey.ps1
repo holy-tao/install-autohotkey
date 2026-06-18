@@ -1,7 +1,10 @@
 param(
     [string] $Version = "latest",
     [string] $Destination = "",
-    [string] $Compiler = ""
+    [string] $Compiler = "",
+    [string] $CacheDir = "",
+    [switch] $ForceBuild,
+    [switch] $ResolveOnly
 )
 
 function Install-Item(){
@@ -49,11 +52,22 @@ if ([string]::IsNullOrWhiteSpace($Destination)) {
 
 $headers = Get-GitHubApiRequestHeaders
 $resolved = Resolve-AhkVersion -Version $Version -Headers $headers
+$isSourceBuild = ($resolved.Major -eq 2 -and $resolved.Minor -ge 1)
+
+# Resolve-only mode: emit the resolved version (used to key the build cache) and exit.
+# This runs before the cache step so the workflow knows what to restore.
+if ($ResolveOnly) {
+    Write-Output "version=$($resolved.Version)" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+    Write-Output "is_source_build=$($isSourceBuild.ToString().ToLowerInvariant())" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+    Write-Host "Resolved version: '$($resolved.Version)' (source build: $isSourceBuild)"
+    return
+}
+
 $extractPath = Join-Path $Destination 'autohotkey'
 
-if ($resolved.Major -eq 2 -and $resolved.Minor -ge 1) {
+if ($isSourceBuild) {
     # 2.1+ is not published to GitHub releases — build from source
-    $installedVersion = Build-AhkFromSource -Version $resolved.Version -Destination $extractPath
+    $installedVersion = Build-AhkFromSource -Version $resolved.Version -Destination $extractPath -CacheDir $CacheDir -ForceBuild:$ForceBuild
 } else {
     # 2.0 and earlier — download from GitHub releases
     $ghVersion = if ($resolved.Version -eq '') { 'latest' } else { "v$($resolved.Version)" }

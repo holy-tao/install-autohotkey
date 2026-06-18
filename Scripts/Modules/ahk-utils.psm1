@@ -65,8 +65,29 @@ function Get-LatestAhkAlphaTag() {
 function Build-AhkFromSource() {
     param(
         [Parameter(Mandatory = $true)][string] $Version,
-        [Parameter(Mandatory = $true)][string] $Destination
+        [Parameter(Mandatory = $true)][string] $Destination,
+        [string] $CacheDir = "",
+        [switch] $ForceBuild
     )
+
+    $cacheable = -not [string]::IsNullOrWhiteSpace($CacheDir)
+    $cached32 = if ($cacheable) { Join-Path $CacheDir 'AutoHotkey32.exe' } else { $null }
+    $cached64 = if ($cacheable) { Join-Path $CacheDir 'AutoHotkey64.exe' } else { $null }
+
+    # Use the cached build when present, unless the caller forced a rebuild. The cache is
+    # populated by actions/cache (keyed on the resolved version) before this step runs.
+    if ($cacheable -and -not $ForceBuild -and (Test-Path $cached32) -and (Test-Path $cached64)) {
+        Write-Host "Using cached AutoHotkey $Version build from: $CacheDir"
+        New-Item -ItemType Directory -Force -Path $Destination | Out-Null
+        Copy-Item $cached32 "$Destination\AutoHotkey32.exe" -Force
+        Copy-Item $cached64 "$Destination\AutoHotkey64.exe" -Force
+        Write-Host "✅ AutoHotkey $Version restored from cache to: $Destination"
+        return $Version
+    }
+
+    if ($ForceBuild) {
+        Write-Host "ForceBuild requested — ignoring any cached build."
+    }
 
     Write-Host "Building AutoHotkey $Version from source..."
 
@@ -110,6 +131,15 @@ function Build-AhkFromSource() {
         New-Item -ItemType Directory -Force -Path $Destination | Out-Null
         Copy-Item "$tempDir\bin\AutoHotkey32.exe" "$Destination\AutoHotkey32.exe" -Force
         Copy-Item "$tempDir\bin\AutoHotkey64.exe" "$Destination\AutoHotkey64.exe" -Force
+
+        # Populate the cache dir so actions/cache can persist this build for the next run.
+        # Skipped on ForceBuild, where the cache step is disabled and nothing would be saved.
+        if ($cacheable -and -not $ForceBuild) {
+            New-Item -ItemType Directory -Force -Path $CacheDir | Out-Null
+            Copy-Item "$tempDir\bin\AutoHotkey32.exe" $cached32 -Force
+            Copy-Item "$tempDir\bin\AutoHotkey64.exe" $cached64 -Force
+            Write-Host "Cached AutoHotkey $Version build to: $CacheDir"
+        }
 
     } finally {
         if (Test-Path $tempDir) {

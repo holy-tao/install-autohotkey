@@ -15,6 +15,10 @@ inputs:
     description: 'Version of the compiler to install, if any (e.g. "Ahk2Exe1.1.37.02a0a" or "latest")'
     required: false
     default: ''
+  force-build:
+    description: 'Always build 2.1+ from source, ignoring any cached build (no effect for 2.0 releases)'
+    required: false
+    default: 'false'
 
 outputs:
   version:
@@ -33,6 +37,22 @@ outputs:
 runs:
   using: 'composite'
   steps:
+    - name: Resolve version
+      id: resolve
+      shell: pwsh
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+      run: |
+        $scriptPath = Join-Path ${{ github.action_path }} 'scripts/install-autohotkey.ps1'
+        & $scriptPath -Version '${{ inputs.version }}' -ResolveOnly
+
+    - name: Cache AutoHotkey build
+      if: steps.resolve.outputs.is_source_build == 'true' && inputs.force-build != 'true'
+      uses: actions/cache@v4
+      with:
+        path: ${{ runner.temp }}/ahk-cache
+        key: ahk-build-${{ runner.os }}-${{ steps.resolve.outputs.version }}
+
     - name: Run Installer
       id: installer
       shell: pwsh
@@ -40,7 +60,7 @@ runs:
         GITHUB_TOKEN: ${{ github.token }}
       run: |
         $scriptPath = Join-Path ${{ github.action_path }} 'scripts/install-autohotkey.ps1'
-        & $scriptPath -Version '${{ inputs.version }}' -Destination '${{ inputs.destination }}' -Compiler '${{ inputs.compiler }}'
+        & $scriptPath -Version '${{ inputs.version }}' -Destination '${{ inputs.destination }}' -Compiler '${{ inputs.compiler }}' -CacheDir '${{ runner.temp }}/ahk-cache' -ForceBuild:$${{ inputs.force-build }}
 
 branding:
   icon: 'terminal'

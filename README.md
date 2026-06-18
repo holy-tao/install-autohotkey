@@ -17,7 +17,7 @@ The resulting directory structure looks like this. If you need the full path to 
     └── <...>
 ```
 
-v2.1 versions are built from source, so they do not contain the UX directory and some of the other scripts (like the updater) that are included in a default AutoHotkey installation.
+v2.1 versions are built from source, so they do not contain the UX directory and some of the other scripts (like the updater) that are included in a default AutoHotkey installation. Because building from source is slow, the action caches the compiled executables (via [`actions/cache`](https://github.com/actions/cache), keyed on the resolved version) and reuses them on subsequent runs. Set the `force-build` input to `true` to bypass the cache and always rebuild.
 
 #### Default (Install Latest AHK v2.0 into the Current Working Directory)
 
@@ -71,6 +71,7 @@ By default, the compiler is not installed. Note that running `install-ahk2exe` i
 | version | String | The version of AutoHotkey to install, or `latest` to install the latest version according to GitHub Releases. The version can be specified with or without a leading "v" - `v2.0.19` and `2.0.19` behave identically. The version selected must be available from the AutoHotkey [GitHub releases page](https://github.com/AutoHotkey/AutoHotkey/releases), _not_ the tags page.
 | destination | String | The directory in which to create the `autohotkey` directory where AutoHotkey will be installed. By default, this is the current working directory. If this directory does not exist, it will be created.
 | compiler | String | The version of Ahk2Exe, if any, to install. Omit or leave blank to not install Ahk2Exe (default behavior)
+| force-build | Boolean | Only affects v2.1+, which is built from source. By default a successful build is cached (keyed on the resolved version) and reused on later runs. Set to `true` to always rebuild from source and ignore the cache. Has no effect on v2.0, which is downloaded from GitHub Releases. Defaults to `false`.
 
 ## Outputs
 | Name | Type | Description|
