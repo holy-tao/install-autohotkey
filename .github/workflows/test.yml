@@ -27,7 +27,7 @@ jobs:
     outputs:
       should_test: ${{ steps.filter.outputs.functional }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dorny/paths-filter@v4
         id: filter
         with:
@@ -71,7 +71,7 @@ jobs:
             expected: "2.1-alpha.20"
             verify_exact: true
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install AutoHotkey (${{ matrix.name }})
         id: install
@@ -231,7 +231,7 @@ jobs:
           - name: nested-path
             destination_suffix: /custom/nested/dir
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set destination path
         id: dest
@@ -326,7 +326,7 @@ jobs:
           - name: compiler-specific
             compiler: "Ahk2Exe1.1.37.02a0a"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install AutoHotkey with compiler (${{ matrix.name }})
         id: install
@@ -361,7 +361,7 @@ jobs:
     if: needs.changes.outputs.should_test == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install AutoHotkey without compiler
         id: install
@@ -382,7 +382,7 @@ jobs:
     if: needs.changes.outputs.should_test == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install AutoHotkey with defaults
         id: install
