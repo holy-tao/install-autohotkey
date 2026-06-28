@@ -48,7 +48,7 @@ runs:
 
     - name: Cache AutoHotkey build
       if: steps.resolve.outputs.is_source_build == 'true' && inputs.force-build != 'true'
-      uses: actions/cache@v5
+      uses: actions/cache@v6
       with:
         path: ${{ runner.temp }}/ahk-cache
         key: ahk-build-${{ runner.os }}-${{ steps.resolve.outputs.version }}
